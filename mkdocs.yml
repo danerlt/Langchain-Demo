@@ -1,0 +1,145 @@
+# 项目文档的主标题
+site_name: Langchain样例
+# 项目文档的描述
+site_description: Langchain框架学习记录
+# 作者
+site_author: 'danerlt'
+# 网站地址
+site_url: 'https://danerlt.github.io/langchain-demo/'
+# 版权
+copyright: 'Copyright © danerlt. All rights reserved.'
+
+strict: false
+# Github仓库相关
+# 仓库名
+repo_name: danerlt/Langchain-Demo
+# 仓库地址
+repo_url: 'https://github.com/danerlt/Langchain-Demo'
+
+# 是否每个目录都创建目录 这个设置false,渲染出来的图片路径就不会有多余的目录
+use_directory_urls: false
+
+# 主题
+theme:
+  name: material
+  #  name: mkdocs
+  #  name: mkdocs
+  # 覆盖mkdocs默认HTML模板的目录
+  custom_dir: overrides
+  language: zh
+  features:
+    - announce.dismiss # 提供已读功能
+    #    - content.action.edit
+    #    - content.action.view
+    #    - content.code.annotate
+    - content.code.copy  # 复制代码块到剪切板
+    #    - content.tabs.link
+    #    - content.tooltips
+    #    - navigation.expand
+    - navigation.instant # 即时加载
+    - navigation.top # 返回顶部
+    - navigation.footer # 页脚显示上一页 下一页
+    - navigation.indexes # 章节索引
+    - navigation.tabs # 导航栏显示在标题下面不显示在左侧
+    - navigation.path # 显示当前页面的路径
+    - navigation.tabs.sticky # 导航标签将锁定在页眉下面，并且在向下滚动时始终保持可见。
+    #    - navigation.sections # 导航栏显示章节
+    - search.highlight # 搜索高亮
+    - search.share # 搜索共享
+    - search.suggest # 搜索建议
+    - toc.follow # 侧边栏会自动滚动
+  # 调色板
+  palette:
+    # 颜色方案 默认为浅色模式
+    - scheme: default
+      # 主色调 用于标题、侧边栏、文本链接和其他几个组件
+      primary: purple  # 紫色
+      # 强调颜色用于表示可以进行交互的元素，例如悬停链接、按钮和滚动条。
+      accent: blue # 蓝色
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    # 深色模式
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  # 字体
+  font:
+    text: Roboto
+    code: Roboto Mono
+  icon:
+    logo: logo
+
+
+
+# 插件
+plugins:
+  # 搜索插件
+  - search:
+      lang: zh
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  # 压缩html
+  - minify:
+      minify_html: true
+  #  - markdownextradata:
+  #      data: data
+  # 自动生成导航栏
+  - awesome-pages
+  - literate-nav:
+      nav_file: nav.md
+      implicit_index: true
+
+# markdown扩展
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - meta
+  - footnotes
+  - codehilite
+  - extra
+  - md_in_html
+  - toc:
+      # 在每个标题的末尾生成永久链接
+      permalink: '#'
+      toc_depth: 3
+      # 替换生成的ID中的空格的字符
+      separator: "_"
+  # 数学公式
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.highlight:
+      linenums: true
+      linenums_style: pymdownx-inline
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format ''
+
+
+extra_javascript:
+  - assets/js/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdnjs.loli.net/ajax/libs/pangu/3.3.0/pangu.min.js
