@@ -176,7 +176,245 @@ if __name__ == '__main__':
 
 `StrOutputParser` 特别简单地将任何输入转换为字符串。
 
-### 管道（Pipeline)
+```python
+import os
+
+from dotenv import load_dotenv
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain_community.llms.openai import OpenAI
+from langchain_core.output_parsers import StrOutputParser
+
+
+def load_env():
+    load_dotenv(verbose=True)
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if openai_api_key is None:
+        print("Please set OPENAI_API_KEY in your environment.")
+        raise ValueError("Please set OPENAI_API_KEY in your environment.")
+
+
+def test_chat_model():
+    print(f"{'*' * 20} test_chat_model {'*' * 20}")
+    prompt = ChatPromptTemplate.from_template("给我将一个关于{topic}的笑话")
+    prompt_value = prompt.invoke({"topic": "冰淇淋"})
+    print(f"{type(prompt_value)=}, {prompt_value=}\n")
+
+    model = ChatOpenAI()
+
+    message = model.invoke(prompt_value)
+    print(f"{type(message)=}, message: {message}")
+    return message
+
+
+def test_llm_model():
+    print(f"{'*' * 20} test_llm_model {'*' * 20}")
+    prompt = ChatPromptTemplate.from_template("给我将一个关于{topic}的笑话")
+    prompt_value = prompt.invoke({"topic": "冰淇淋"})
+    print(f"{type(prompt_value)=}, {prompt_value=}\n")
+
+    model = OpenAI(model="gpt-3.5-turbo-instruct")
+
+    message = model.invoke(prompt_value)
+    print(f"{type(message)=}, message: {message}")
+    return message
+
+
+def test_output_parser():
+    print(f"{'*' * 20} test_output_parser {'*' * 20}")
+    parser = StrOutputParser()
+
+    chat_message = test_chat_model()
+    chat_res = parser.invoke(chat_message)
+    print(f"{type(chat_res)=}, {chat_res=}")
+
+    llm_message = test_llm_model()
+    llm_res = parser.invoke(llm_message)
+    print(f"{type(llm_res)=}, {llm_res=}")
+
+
+def main():
+    load_dotenv()
+    test_output_parser()
+
+
+if __name__ == '__main__':
+    main()
+
+```
+
+![](https://danerlt-1258802437.cos.ap-chongqing.myqcloud.com/2023-12-28-7DnMvC.png)
+
+### 完整的管道（Entirte Pipeline)
+
+安装以下的步骤进行：
+
+1. 将用户输入的 topic 构造成字典 `{"topic": "冰淇淋"}` 传入 `PromptTemplate`。
+2. `prompt` 组件接收用户输入然后构造成一个 `PromptValue` 对象。
+3. `model` 组件接收生成的提示词，然后将其传递给 LLM ，并将其输出转换成 `BaseMessage` 对象。
+4. `output_parser` 组件接收 `BaseMessage` 对象或字符串，并将其转换成 Python 字符串。
+
+
+```mermaid
+graph LR
+    A(Input: topic=冰淇淋) --> |Dict| B(PromptTemplate)
+    B -->|PromptValue| C(ChatModel)    
+    C -->|BaseMessage| D(StrOutputParser)
+    D --> |String| F(Result)
+```
+
+请注意，如果您对任何组件的输出感到好奇，您始终可以测试链的较小版本，例如 `prompt` 或 `prompt | model` 以查看中间结果：
+
+```python
+input = {"topic": "ice cream"}
+
+prompt.invoke(input)
+
+(prompt | model).invoke(input)
+```
 
 ## RAG搜索示例
+
+对于我们的下一个示例，我们希望运行检索增强生成链以在回答问题时添加一些上下文。
+
+首先需要安装依赖：
+```bash
+pip install langchain docarray tiktoken
+# langchain 0.0.352 运行下面的案列会有bug，需要将pydantic版本降到1.10.8
+pip install pydantic==1.10.8
+# 由于Openai API接口每分钟限制3次，将模型换成阿里云通用千问，需要安装dashscope
+pip install dashscope==1.13.6
+```
+
+```python
+import os
+import typing as t
+
+from dotenv import load_dotenv
+from langchain.prompts import ChatPromptTemplate
+from langchain.vectorstores import DocArrayInMemorySearch
+from langchain_community.chat_models.tongyi import ChatTongyi
+from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableSequence
+from langchain_core.vectorstores import VectorStoreRetriever
+
+
+def load_env():
+    load_dotenv(verbose=True)
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if openai_api_key is None:
+        print("Please set OPENAI_API_KEY in your environment.")
+        raise ValueError("Please set OPENAI_API_KEY in your environment.")
+
+
+def get_test_texts():
+    """获取测试用的文本信息"""
+    texts = [
+        "猴子吃香蕉”",
+        "猫吃老鼠",
+        "狗吃骨头",
+        "王八吃绿豆糕"
+    ]
+    return texts
+
+
+def get_retriever(texts: t.List[str]) -> VectorStoreRetriever:
+    """获取检索器
+
+    Args:
+        texts: 向量库中存储的文本内容
+
+    Returns: VectorStoreRetriever
+
+    """
+    vectorstore = DocArrayInMemorySearch.from_texts(texts, embedding=DashScopeEmbeddings())
+    retriever = vectorstore.as_retriever()
+    return retriever
+
+
+def get_prompt_template() -> ChatPromptTemplate:
+    template = """
+    <指令>
+        根据已知信息，简洁和专业的来回答问题。
+        如果无法从中得到答案，请说 “根据已知信息无法回答该问题”，不允许在答案中添加编造成分，答案请使用中文。
+    </指令>
+    <已知信息>
+        {context}
+    </已知信息>
+    <问题>
+        {question}
+    </问题>
+    """
+    prompt = ChatPromptTemplate.from_template(template)
+    return prompt
+
+
+def get_model():
+    model = ChatTongyi()
+    return model
+
+
+def get_output_parser():
+    output_parser = StrOutputParser()
+    return output_parser
+
+
+def get_rag_chain(retriever: VectorStoreRetriever) -> RunnableSequence:
+    """获取rag chain
+
+    Args:
+        retriever: 检索器
+
+    Returns: RunnableSequence
+
+    """
+    prompt = get_prompt_template()
+    model = get_model()
+    output_parser = get_output_parser()
+    setup_and_retrieval = RunnableParallel(
+        {"context": retriever, "question": RunnablePassthrough()}
+    )
+    chain = setup_and_retrieval | prompt | model | output_parser
+    print(f"{type(chain)=}, {chain=}")
+    return chain
+
+
+def test_chain(chain, user_inputs: t.List[str]):
+    outputs = chain.batch(user_inputs)
+    for i, output in enumerate(outputs):
+        user_input = user_inputs[i]
+        print(f"Q:{user_input}\nA:{output}")
+
+
+def main():
+    load_env()
+    texts = get_test_texts()
+    retriever = get_retriever(texts)
+    chain = get_rag_chain(retriever)
+    test_inputs = ["猫吃什么？",
+                   "王八吃什么？",
+                   "猪吃什么？"]
+    test_chain(chain, test_inputs)
+
+
+if __name__ == '__main__':
+    main()
+
+```
+
+![](https://danerlt-1258802437.cos.ap-chongqing.myqcloud.com/2023-12-28-pgm2ff.png)
+
+
+## 为什么要使用 LCEL
+
+> LCEL 可以轻松地从基本组件构建复杂的链条。它通过提供以下功能来实现这一点：
+> 1. 统一的接口：每个 LCEL 对象都实现 Runnable 接口，该接口定义了一组通用的调用方法（ invoke 、 batch 、 stream 、 ainvoke 、...）。这使得 LCEL 对象链也可以自动支持这些调用。也就是说，每个 LCEL 对象链本身就是一个 LCEL 对象。
+> 2. 组合原语：LCEL 提供了许多原语，可以轻松组合链、并行化组件、添加后置操作、动态配置链内部等。
+
+具体看参考链接：[https://python.langchain.com/docs/expression_language/why](https://python.langchain.com/docs/expression_language/why)，这个里面介绍了使用 LCEL 带来的一些好处。
+
+
 
