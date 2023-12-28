@@ -1,5 +1,8 @@
 # ChatGPT API Key
 OPENAI_API_KEY=your api key
 
+# 通义千问 API Key
+DASHSCOPE_API_KEY=your api key
+
 # zhipu ai API Key
 ZHIPU_API_KEY=your api key
