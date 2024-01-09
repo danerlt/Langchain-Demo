@@ -18,10 +18,10 @@ from langchain_community.chat_models.tongyi import ChatTongyi
 def load_env():
     load_dotenv(verbose=True)
 
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_api_key is None:
-        print("Please set OPENAI_API_KEY in your environment.")
-        raise ValueError("Please set OPENAI_API_KEY in your environment.")
+    dashscope_api_key = os.getenv("DASHSCOPE_API_KEY")
+    if dashscope_api_key is None:
+        print("Please set DASHSCOPE_API_KEY in your environment.")
+        raise ValueError("Please set DASHSCOPE_API_KEY in your environment.")
 
 
 def get_prompt_template() -> ChatPromptTemplate:
