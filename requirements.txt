@@ -1,7 +1,12 @@
-langchain==0.0.352
+langchain==0.1.0
 langchain-serve==0.0.61
+langchainhub==0.1.14
 openai==1.6.1
 loguru==0.7.2
 docarray==0.40.0
 tiktoken==0.5.2
+pydantic==1.10.8
 dashscope==1.13.6
+llama-index==0.9.27
+llama-hub==0.0.67
+ipython==8.20.0
